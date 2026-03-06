@@ -1,0 +1,29 @@
+# Data directories — raw and clean data are NOT committed
+# Published outputs are distributed via GitHub Releases (see v1.0)
+data/raw/
+data/clean/
+data/temp/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+*.egg
+
+# Jupyter
+.ipynb_checkpoints/
+
+# System
+.DS_Store
+*.swp
+*.swo
+
+# Large intermediate files
+*.geoparquet
+*.gdb/
+
+# PDFs are committed in paper/
+*.pdf
+!paper/*.pdf
