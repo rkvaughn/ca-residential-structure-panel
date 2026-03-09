@@ -306,6 +306,102 @@ If the quantity of interest is stable across specifications (1) and (2), the geo
 
 ---
 
+## External Validation: Arruda et al. (2024) OSM Building Classification
+
+As a second external validation, we compare our Bootstrap P50 estimates to the
+Arruda et al. (2024) residential building classification derived from OpenStreetMap.
+
+### Dataset
+
+Arruda et al. (2024) classify 67.7 million US buildings as *RES* or *NON_RES* using
+OpenStreetMap building tags augmented by contextual auxiliary inference. The dataset
+is distributed by county-level GeoPackage files hosted on OSF (DOI:
+10.17605/OSF.IO/UTGAE). We download the 58 California county files (script
+`07_acquire_arruda_comparison.py`) using HTTP range-request extraction to avoid
+downloading the full 8 GB multi-state archive. County files are organized within
+CBSA-range ZIPs; CA county GPKGs are identified by the `_CA.gpkg` filename suffix.
+
+**County FIPS note.** Files in the Arruda OSF archive drop the leading zero from
+low-numbered FIPS codes: California (state FIPS = 06) county files are named
+`6XXX_County_CA.gpkg`. We zero-pad the first field to recover the standard 5-digit
+FIPS (`raw_fips.zfill(5)`).
+
+### Results
+
+All 58 California counties are present in the Arruda dataset. Across the state,
+Arruda identifies **7.88 million RES buildings** in California as of 2024.
+
+![Figure 7: Arruda vs Bootstrap P50 comparison](../output/figures/fig_arruda_comparison.png)
+
+**Figure 7.** *Left: County-level scatter of Arruda RES building count vs. Bootstrap P50,
+with the 1:1 reference line (dashed red). Spearman rank correlation $\rho = 0.916$. Right:
+Side-by-side comparison for the 20 largest counties by ACS housing units, showing
+Overture labeled (green), Arruda RES (blue), and Bootstrap P50 (red).*
+
+**Rank concordance.** The Spearman rank correlation between Arruda county RES counts
+and our Bootstrap P50 is $\rho = 0.916$ ($p = 6.8 \times 10^{-24}$), confirming that
+both methods agree strongly on the *ordering* of counties by residential stock size.
+Counties with more residential buildings per one measure have more per the other,
+essentially without exception.
+
+**Level ratios.** Despite the high rank concordance, Arruda counts are substantially
+lower than Bootstrap P50 in absolute levels: the mean county ratio (Arruda / Bootstrap
+P50) is **0.54**, and the median is **0.37**. This is expected: OSM building coverage
+in the United States is uneven. Volunteer-mapped building footprints in OSM are most
+complete in dense, walkable urban neighborhoods where mapping effort has concentrated.
+Suburban sprawl areas — subdivisions, exurban single-family tracts — are less
+systematically covered, leading to OSM undercounts even where buildings physically
+exist and are identifiable from satellite imagery.
+
+Two patterns are visible in Figure 7 Panel B:
+
+1. **Dense urban counties (LA, Orange, San Francisco)**: Arruda tracks Bootstrap P50
+   closely — ratios of 1.03, 0.99, and 0.91 respectively — suggesting OSM coverage
+   is nearly complete in California's densest metro cores.
+
+2. **Suburban / inland counties (Riverside, San Bernardino, San Diego)**: Arruda falls
+   well short of Bootstrap P50 (ratios of 0.30, 0.20, 0.28). These are the counties
+   where suburban sprawl development is extensive and OSM building coverage is most
+   incomplete.
+
+**Interpretation.** The high rank correlation supports ordinal use of Arruda counts
+(ranking counties, identifying relative housing stock) but not level substitution for
+our Bootstrap P50. The ACS calibration in our bootstrap captures the true residential
+fraction of null-subtype Overture buildings using survey data, whereas Arruda relies
+on OSM completeness which varies across the suburban-urban gradient. The concordance
+in dense urban areas — where OSM is most complete and our bootstrap faces the unit/
+structure distinction most acutely — provides reassurance that both methods are
+tracking the same underlying stock.
+
+### Arruda-Anchored Hind-Cast Panel
+
+We provide an optional `tract_structure_panel_arruda.parquet` that uses Arruda 2024
+county RES counts as the 2024 anchor in place of the Overture labeled count, then
+applies the same BPS/DINS backward hind-cast and within-county tract shares as the
+primary panel. This panel is available as a GitHub Release v1.1 asset and is intended
+for users who prefer an OSM-based anchor — for example, because they are working in
+dense urban areas where Arruda coverage is nearly complete and the unit/structure
+distinction makes the ACS calibration less reliable.
+
+**Recommendation.** For most CA research applications, the Bootstrap P50 (primary
+panel) is preferred over the Arruda-anchored panel because it is calibrated to ACS
+survey data and covers the full suburban-to-rural gradient. The Arruda panel is
+provided as a transparency check and as a numerically independent alternative for
+robustness testing.
+
+### Recommended Usage Update
+
+Based on both the ACS and Arruda validation exercises, we now distinguish three anchor
+scenarios for downstream use:
+
+| Anchor | File | When to prefer |
+|--------|------|----------------|
+| **Bootstrap P50** (primary) | `tract_structure_panel_bootstrap.parquet` | All-purpose; ACS-calibrated; covers full urban-rural gradient |
+| **ACS hybrid** | `tract_structure_panel_acs.parquet` for 2010–2020 + Bootstrap for 2021–2024 | Research requiring maximum alignment to survey data |
+| **Arruda OSM** | `tract_structure_panel_arruda.parquet` | Dense urban areas; OSM-sourced numerically independent check |
+
+---
+
 ## Known Limitations and Biases
 
 **1. The 2024 Overture anchor undercounts post-fire counties even after bootstrap.** For Butte, the bootstrap P50 of 87,850 is close to but still below the ACS 2018 housing unit count of ~98,000. The null-absorption fraction is bounded at 1 by construction, so the bootstrap cannot exceed `R_c + N_c`. For Butte, where `R_c + N_c` is a small fraction of the true pre-fire count, the bootstrap's upper bound is itself understated.
@@ -350,10 +446,13 @@ All code for the residential structure count panel is in the project repository:
 | [`04_build_structure_panel.py`](https://github.com/rkvaughn/ca-residential-structure-panel/blob/main/scripts/04_build_structure_panel.py) | DINS-corrected hind-cast + downscale → tract × year point estimate panel |
 | [`05_bootstrap_structure_panel.py`](https://github.com/rkvaughn/ca-residential-structure-panel/blob/main/scripts/05_bootstrap_structure_panel.py) | ACS-external Beta calibration + B=500 bootstrap → tract × year P5/P50/P95/IQR panel |
 | [`06_build_acs_challenger.py`](https://github.com/rkvaughn/ca-residential-structure-panel/blob/main/scripts/06_build_acs_challenger.py) | ACS B25001 challenger panel 2010–2024; comparison vs. BPS and bootstrap |
+| [`07_acquire_arruda_comparison.py`](https://github.com/rkvaughn/ca-residential-structure-panel/blob/main/scripts/07_acquire_arruda_comparison.py) | Arruda et al. (2024) OSM building classification; range-extract CA GPKGs; comparison table + figure; Arruda-anchored tract panel |
 
 To replicate, clone the repository, install dependencies (`pip install geopandas overturemaps pandas numpy scipy pyarrow`), and run the scripts in order. The Overture download (~2.75 GB) takes 10–30 minutes; the county building statistics spatial join (run once, cached) takes 5–15 minutes; the bootstrap (500 iterations × 58 counties) completes in under 30 seconds; the ACS challenger panel requires ~15 seconds of Census API calls for 11 annual vintages.
 
 Pre-built panel outputs are available as **[GitHub Release v1.0 assets](https://github.com/rkvaughn/ca-residential-structure-panel/releases/tag/v1.0)** — skip scripts 01–05 and start directly from the downloaded parquets if you only need the data.
+
+The Arruda-anchored tract panel (`tract_structure_panel_arruda.parquet`) is distributed separately as a **[GitHub Release v1.1 asset](https://github.com/rkvaughn/ca-residential-structure-panel/releases/tag/v1.1)** — same hind-cast logic and tract shares as v1.0, with Arruda (2024) county RES counts as the 2024 anchor.
 
 The calibration log is saved to [`output/tables/bootstrap_calibration_log.csv`](https://github.com/rkvaughn/ca-residential-structure-panel/blob/main/output/tables/bootstrap_calibration_log.csv), documenting every iteration of the per-county Beta calibration. The full ACS-vs-BPS comparison is in [`output/tables/acs_vs_bps_comparison.csv`](https://github.com/rkvaughn/ca-residential-structure-panel/blob/main/output/tables/acs_vs_bps_comparison.csv).
 

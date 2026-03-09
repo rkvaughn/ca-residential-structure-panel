@@ -35,7 +35,7 @@ value pre-specified here and explicitly confirmed by the PI.
 
 ---
 
-## Project Status (as of 2026-03-06)
+## Project Status (as of 2026-03-09)
 
 | Component | Status |
 |---|---|
@@ -47,11 +47,14 @@ value pre-specified here and explicitly confirmed by the PI.
 | Script 04: build_structure_panel | **Validated** — run in new repo 2026-03-06; 100,350 rows, 2024 hind-cast = anchor |
 | Script 05: bootstrap_structure_panel | **Validated** — prior successful run in prop13/ 2026-03-03 |
 | Script 06: build_acs_challenger | **Validated** — run in new repo 2026-03-06; Boot/ACS ratio ≈ 0.82–0.84 |
-| Figures (6) | **Complete** — in output/figures/ |
-| Tables (2) | **Complete** — in output/tables/ |
-| Paper (markdown) | **Complete** — standalone framing, prop13 DDD refs removed |
-| Paper (PDF) | **Complete** — rebuilt 2026-03-06 |
+| Script 07: acquire_arruda_comparison | **Complete** — run 2026-03-09; all 58 CA counties; Spearman ρ=0.916 |
+| Figures (7) | **Complete** — output/figures/ (incl. fig_arruda_comparison.png) |
+| Tables (4) | **Complete** — output/tables/ (incl. arruda_comparison.csv, arruda_ca_county_counts.parquet) |
+| Arruda tract panel | **Complete** — data/clean/tract_structure_panel_arruda.parquet; 120,855 rows |
+| Paper (markdown) | **Complete** — Arruda validation section added 2026-03-09 |
+| Paper (PDF) | **Complete** — rebuilt 2026-03-09 |
 | GitHub Release v1.0 | **Complete** — 5 parquet assets uploaded |
+| GitHub Release v1.1 | **Complete** — tract_structure_panel_arruda.parquet uploaded 2026-03-09 |
 | utils/download_utils.py | Copied from ~/Projects/utilities/ 2026-03-06 |
 | utils/census_api.py | Copied from ~/Projects/utilities/ 2026-03-06 |
 
@@ -81,6 +84,7 @@ ca-residential-structure-panel/
 │   ├── 04_build_structure_panel.py
 │   ├── 05_bootstrap_structure_panel.py
 │   ├── 06_build_acs_challenger.py
+│   ├── 07_acquire_arruda_comparison.py
 │   └── utils/
 │       ├── download_utils.py
 │       └── census_api.py
