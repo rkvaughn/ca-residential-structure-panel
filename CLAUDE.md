@@ -115,6 +115,13 @@ ca-residential-structure-panel/
 
 ---
 
+## Prompt Log
+
+See [`PROMPT_LOG.md`](PROMPT_LOG.md) for a timestamped record of all user prompts and
+Claude outputs for this project.
+
+---
+
 ## PDF Rendering Toolchain
 
 Same as prop13_paper:
