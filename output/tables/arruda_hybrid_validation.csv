@@ -1,11 +1,11 @@
 county_FIPS,county_name,R_c,arruda_res_count,gap_arruda_minus_Rc,arruda_exceeds_R_c,calibration_source,f_c_external
-06001,Alameda,71127,421850,350723,True,acs_clipped,0.99
+06001,Alameda,71127,421850,350723,True,arruda_direct,0.805
 06003,Alpine,943,1497,554,True,acs,0.7819
 06005,Amador,384,3977,3593,True,acs,0.7584
 06007,Butte,2016,20305,18289,True,acs,0.8959
 06009,Calaveras,184,41163,40979,True,acs,0.5948
 06011,Colusa,1623,953,-670,False,acs,0.5481
-06013,Contra Costa,33077,127107,94030,True,acs_clipped,0.99
+06013,Contra Costa,33077,127107,94030,True,arruda_direct,0.2697
 06015,Del Norte,275,1604,1329,True,acs,0.7794
 06017,El Dorado,7799,19712,11913,True,acs,0.9136
 06019,Fresno,8836,67806,58970,True,acs,0.9362
@@ -17,36 +17,36 @@ county_FIPS,county_name,R_c,arruda_res_count,gap_arruda_minus_Rc,arruda_exceeds_
 06031,Kings,2160,3263,1103,True,acs,0.8297
 06033,Lake,4640,7050,2410,True,acs,0.7319
 06035,Lassen,132,1674,1542,True,acs,0.6142
-06037,Los Angeles,2678687,2825270,146583,True,acs_clipped,0.99
+06037,Los Angeles,2678687,2825270,146583,True,arruda_direct,0.5908
 06039,Madera,412,15630,15218,True,acs,0.6895
-06041,Marin,7731,82532,74801,True,acs_clipped,0.99
+06041,Marin,7731,82532,74801,True,arruda_direct,0.7373
 06043,Mariposa,350,7401,7051,True,acs,0.4643
 06045,Mendocino,1191,4514,3323,True,acs,0.6204
 06047,Merced,13177,37935,24758,True,acs,0.7407
 06049,Modoc,126,969,843,True,acs,0.4437
-06051,Mono,505,9491,8986,True,acs_clipped,0.99
+06051,Mono,505,9491,8986,True,arruda_direct,0.7823
 06053,Monterey,81662,110656,28994,True,acs,0.7768
 06055,Napa,3303,25839,22536,True,acs,0.7809
 06057,Nevada,3417,21614,18197,True,acs,0.7881
-06059,Orange,98456,763842,665386,True,acs_clipped,0.99
+06059,Orange,98456,763842,665386,True,arruda_direct,0.9322
 06061,Placer,25361,61065,35704,True,acs,0.9292
 06063,Plumas,355,2634,2279,True,acs,0.8251
 06065,Riverside,135914,247436,111522,True,acs,0.9503
-06067,Sacramento,45416,251484,206068,True,acs_clipped,0.99
+06067,Sacramento,45416,251484,206068,True,arruda_direct,0.4328
 06069,San Benito,3851,22887,19036,True,acs,0.6098
 06071,San Bernardino,59996,137317,77321,True,acs,0.9724
-06073,San Diego,48074,263637,215563,True,acs_clipped,0.99
-06075,San Francisco,8697,147242,138545,True,acs_clipped,0.99
+06073,San Diego,48074,263637,215563,True,arruda_direct,0.2235
+06075,San Francisco,8697,147242,138545,True,arruda_direct,0.9141
 06077,San Joaquin,33064,170205,137141,True,acs,0.8889
 06079,San Luis Obispo,37656,150427,112771,True,acs,0.6805
-06081,San Mateo,46545,211522,164977,True,acs_clipped,0.99
-06083,Santa Barbara,27448,81033,53585,True,acs_clipped,0.99
-06085,Santa Clara,116344,522957,406613,True,acs_clipped,0.99
+06081,San Mateo,46545,211522,164977,True,arruda_direct,0.8904
+06083,Santa Barbara,27448,81033,53585,True,arruda_direct,0.4434
+06085,Santa Clara,116344,522957,406613,True,arruda_direct,0.8866
 06087,Santa Cruz,25085,30300,5215,True,acs,0.9714
 06089,Shasta,30419,48451,18032,True,acs,0.6764
 06091,Sierra,473,1220,747,True,acs,0.5703
 06093,Siskiyou,1286,7060,5774,True,acs,0.5582
-06095,Solano,10807,112493,101686,True,acs_clipped,0.99
+06095,Solano,10807,112493,101686,True,arruda_direct,0.6919
 06097,Sonoma,113069,268015,154946,True,acs,0.5463
 06099,Stanislaus,9520,47317,37797,True,acs,0.8645
 06101,Sutter,233,8771,8538,True,acs,0.864
@@ -54,6 +54,6 @@ county_FIPS,county_name,R_c,arruda_res_count,gap_arruda_minus_Rc,arruda_exceeds_
 06105,Trinity,40,693,653,True,acs,0.6143
 06107,Tulare,10919,48196,37277,True,acs,0.7627
 06109,Tuolumne,2836,46916,44080,True,acs,0.5884
-06111,Ventura,26060,88021,61961,True,acs_clipped,0.99
-06113,Yolo,13890,27466,13576,True,acs_clipped,0.99
+06111,Ventura,26060,88021,61961,True,arruda_direct,0.2616
+06113,Yolo,13890,27466,13576,True,arruda_direct,0.221
 06115,Yuba,283,506,223,True,acs,0.7748

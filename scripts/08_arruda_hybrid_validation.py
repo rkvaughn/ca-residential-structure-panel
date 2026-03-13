@@ -225,8 +225,10 @@ def compute_hybrid_panel(
         .rename(columns={"p50_residential_count": "bootstrap_p50_2024"})
     )
 
-    # Clipping counties
-    clipping_fips = set(ext[ext["calibration_source"] == "acs_clipped"]["county_FIPS"])
+    # Dense urban counties: acs_clipped (script 05 not yet re-run with Arruda) OR
+    # arruda_direct (script 05 already re-run — no post-hoc rescaling needed for these)
+    clipping_fips      = set(ext[ext["calibration_source"].isin({"acs_clipped", "arruda_direct"})]["county_FIPS"])
+    needs_rescale_fips = set(ext[ext["calibration_source"] == "acs_clipped"]["county_FIPS"])
 
     # Scale table: one row per county (all 58)
     scale_rows = []
@@ -240,7 +242,8 @@ def compute_hybrid_panel(
         .iterrows()
     ):
         fips   = row["county_FIPS"]
-        is_clip = fips in clipping_fips
+        is_clip          = fips in clipping_fips
+        needs_rescale    = fips in needs_rescale_fips
         p50_24 = float(row["bootstrap_p50_2024"]) if not pd.isna(row["bootstrap_p50_2024"]) else None
         arr_res = float(row["arruda_res_count"]) if not pd.isna(row["arruda_res_count"]) else None
         r_c     = float(row["R_c"])
@@ -248,10 +251,13 @@ def compute_hybrid_panel(
         # Skip rescaling if Arruda_RES < R_c (negative gap — would bias downward)
         arruda_negative = arr_res is not None and arr_res < r_c
 
-        if is_clip and p50_24 is not None and arr_res is not None and not arruda_negative:
+        if needs_rescale and p50_24 is not None and arr_res is not None and not arruda_negative:
+            # acs_clipped: bootstrap not yet Arruda-calibrated → rescale post-hoc
             sf = arr_res / p50_24
         else:
-            sf = 1.0   # no rescaling
+            # arruda_direct: bootstrap already Arruda-calibrated by script 05 (no-op)
+            # or non-clipping county
+            sf = 1.0
 
         scale_map[fips] = sf if is_clip else 1.0
         scale_rows.append({
@@ -264,7 +270,7 @@ def compute_hybrid_panel(
             "scale_factor":        round(sf, 6),
             "change_pct":          round((sf - 1.0) * 100, 2),
             "arruda_negative_flag": arruda_negative,
-            "rescaled":            is_clip and sf != 1.0,
+            "rescaled":            needs_rescale and sf != 1.0,
         })
 
     scale_table = pd.DataFrame(scale_rows).sort_values("county_FIPS")
@@ -362,8 +368,8 @@ def plot_spaghetti_all(
     df = index_to_base_year(hybrid_ts)
     outlier_fips = flag_outliers(df)
 
-    # Classification for coloring outliers
-    clipping_fips = set(ext[ext["calibration_source"] == "acs_clipped"]["county_FIPS"])
+    # Classification for coloring outliers (dense urban = acs_clipped OR arruda_direct)
+    clipping_fips = set(ext[ext["calibration_source"].isin({"acs_clipped", "arruda_direct"})]["county_FIPS"])
 
     fig, ax = plt.subplots(figsize=(11, 6))
     ax.set_facecolor("white")
@@ -438,7 +444,7 @@ def plot_spaghetti_dense_urban(
     15 ACS-clipped counties. Each county: dashed=original bootstrap, solid=hybrid.
     Shows how Arruda rescaling changes the dense-urban estimates.
     """
-    clipping_fips = sorted(ext[ext["calibration_source"] == "acs_clipped"]["county_FIPS"])
+    clipping_fips = sorted(ext[ext["calibration_source"].isin({"acs_clipped", "arruda_direct"})]["county_FIPS"])
 
     orig_sub  = original_ts[original_ts["county_FIPS"].isin(clipping_fips)].copy()
     hyb_sub   = hybrid_ts[hybrid_ts["county_FIPS"].isin(clipping_fips)].copy()
@@ -499,9 +505,16 @@ def plot_spaghetti_dense_urban(
 
     ax.set_xlabel("Year", fontsize=9)
     ax.set_ylabel("Residential structures (2010 = 100)", fontsize=9)
-    ax.set_title("Dense Urban Counties (ACS-clipped) — Original vs Arruda Hybrid\n"
-                 "(dashed = original bootstrap; solid = Arruda rescaled)",
-                 fontsize=10, pad=8)
+    n_direct  = (ext["calibration_source"] == "arruda_direct").sum()
+    n_clipped = (ext["calibration_source"] == "acs_clipped").sum()
+    mode_note = (
+        "Script 05 re-run with Arruda hybrid — bootstrap natively calibrated"
+        if n_direct > 0 else
+        "Post-hoc rescaling applied — re-run script 05 for native calibration"
+    )
+    ax.set_title(f"Dense Urban Counties — Arruda-Calibrated Residential Structures\n"
+                 f"({mode_note}; dashed = original; solid = current)",
+                 fontsize=9, pad=8)
     ax.set_xlim(2010, 2027)
     ax.yaxis.set_major_formatter(mticker.FormatStrFormatter("%.0f"))
     ax.spines[["top", "right"]].set_visible(False)
@@ -525,7 +538,7 @@ def plot_spaghetti_rural(
     out_path: Path,
 ) -> None:
     """43 non-clipping counties indexed to 2010=100. Mean line, IQR-outliers labeled."""
-    rural_fips = set(ext[ext["calibration_source"] == "acs"]["county_FIPS"])
+    rural_fips = set(ext[ext["calibration_source"] == "acs"]["county_FIPS"])  # only clean-ACS counties
     df_rural   = hybrid_ts[hybrid_ts["county_FIPS"].isin(rural_fips)].copy()
     df_idx     = index_to_base_year(df_rural)
     outlier_fips = flag_outliers(df_idx)
