@@ -35,7 +35,7 @@ value pre-specified here and explicitly confirmed by the PI.
 
 ---
 
-## Project Status (as of 2026-03-09)
+## Project Status (as of 2026-03-12)
 
 | Component | Status |
 |---|---|
@@ -55,6 +55,14 @@ value pre-specified here and explicitly confirmed by the PI.
 | Paper (PDF) | **Complete** — rebuilt 2026-03-09 |
 | GitHub Release v1.0 | **Complete** — 5 parquet assets uploaded |
 | GitHub Release v1.1 | **Complete** — tract_structure_panel_arruda.parquet uploaded 2026-03-09 |
+| Script 05: Arruda hybrid calibration (Step 0b) | **Complete** — added `apply_arruda_hybrid_calibration()` 2026-03-12; replaces ACS-clipped f_c=0.99 with Arruda f_c for 15 dense-urban counties; requires raw Overture data to activate |
+| Script 08: arruda_hybrid_validation | **Complete** — run 2026-03-12; post-hoc rescaling, validation, spaghetti plots (3), animated GIF |
+| Arruda hybrid panel | **Complete** — data/clean/tract_structure_panel_arruda_hybrid.parquet (120,855 rows) |
+| Hybrid scale factors table | **Complete** — output/tables/arruda_hybrid_scale_factors.csv |
+| Negative f_c_arruda validation | **Complete** — 1 county (Colusa, not ACS-clipped); output/tables/arruda_hybrid_validation.csv |
+| Spaghetti plots (3) | **Complete** — fig_spaghetti_all_counties.png, fig_spaghetti_dense_urban.png, fig_spaghetti_rural.png |
+| Animated GIF | **Complete** — output/figures/fig_structure_count_animation.gif (15 frames, 2 fps) |
+| WUI buffer analysis plan | **Complete** — docs/wui_buffer_analysis_plan.md; Scripts 09–11 planned; blocked on Banerjee dataset verification |
 | utils/download_utils.py | Copied from ~/Projects/utilities/ 2026-03-06 |
 | utils/census_api.py | Copied from ~/Projects/utilities/ 2026-03-06 |
 
@@ -85,15 +93,18 @@ ca-residential-structure-panel/
 │   ├── 05_bootstrap_structure_panel.py
 │   ├── 06_build_acs_challenger.py
 │   ├── 07_acquire_arruda_comparison.py
+│   ├── 08_arruda_hybrid_validation.py
 │   └── utils/
 │       ├── download_utils.py
 │       └── census_api.py
 ├── data/
 │   ├── raw/          # gitignored — re-acquire via scripts 01–03
 │   └── clean/        # gitignored — distributed via GitHub Releases v1.0
+├── docs/
+│   └── wui_buffer_analysis_plan.md   # WUI buffer analysis plan (Scripts 09–11)
 ├── output/
-│   ├── figures/      # 6 PNG figures — committed
-│   └── tables/       # 2 CSV tables — committed
+│   ├── figures/      # 10 PNG figures + 1 GIF — committed
+│   └── tables/       # 6 CSV/parquet tables — committed
 ├── paper/
 │   ├── structure_count_writeup.md
 │   └── structure_count_writeup.pdf

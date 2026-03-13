@@ -15,6 +15,26 @@ Step 0 — County building statistics (cached to data/temp/)
     r_frac_c = R_c / (R_c + L_c)  [labeled residential fraction — data-derived]
   Cached to data/temp/county_building_stats.parquet (skip-if-exists).
 
+Step 0a — ACS external absorption calibration
+  f_c_external = (ACS_units_c − R_c) / max(N_c, 1)
+  Problem: ACS counts *housing units*; Overture counts *structures*. In dense
+  urban counties (≥15 CA counties), ACS_units >> structures → f_c clips to 0.99.
+
+Step 0b — Arruda hybrid override (for ACS-clipped counties)
+  For counties where Step 0a clips to MU_CLIP_HI (unit/structure mismatch),
+  replace f_c_external with Arruda-derived absorption fraction:
+    f_c_arruda = max(0, Arruda_RES_c − R_c) / max(N_c, 1)
+  Arruda et al. (2024) classify OSM buildings as RES/NON_RES — same unit of
+  measurement as Overture (buildings, not housing units), eliminating the
+  unit/structure mismatch. OSM undercoverage in rural/suburban areas means
+  Arruda is less reliable there; ACS is retained for non-clipping counties.
+
+  Requires: output/tables/arruda_ca_county_counts.parquet (from script 07).
+  If file is absent, ACS calibration is kept for all counties with a warning.
+
+  Validation: counties where Arruda_RES_c < R_c yield negative f_c_arruda.
+  These are flagged and fall back to the endogenous r_frac_c.
+
 Step 1 — Per-county Beta calibration (Phase 1 + Phase 2 check)
   For each county c, calibrate Beta(α_c, β_c) over the null-subtype absorption
   fraction f_c (= share of null buildings that are truly residential).
@@ -126,6 +146,9 @@ CACHE_COUNTY_STATS    = TEMP_DIR / "county_building_stats.parquet"
 OUT_BOOTSTRAP         = CLEAN_DIR / "tract_structure_panel_bootstrap.parquet"
 OUT_CALIB_LOG         = OUT_TABLES / "bootstrap_calibration_log.csv"
 OUT_EXT_ABSORPTION    = CLEAN_DIR / "external_absorption_fractions.parquet"
+
+# Arruda county counts written by script 07 — used for hybrid calibration (Step 0b)
+IN_ARRUDA_COUNTY      = OUT_TABLES / "arruda_ca_county_counts.parquet"
 
 # ACS vintage for external calibration. Using 2022 5-year (2018-2022) — closest
 # available to the 2024 Overture anchor that is well-established.
@@ -433,6 +456,162 @@ def compute_county_building_stats() -> pd.DataFrame:
           f"mean={counts['r_frac'].mean():.3f}  "
           f"max={counts['r_frac'].max():.3f}")
     return counts
+
+
+# ---------------------------------------------------------------------------
+# Step 0b: Arruda hybrid override for ACS-clipped counties
+# ---------------------------------------------------------------------------
+
+def apply_arruda_hybrid_calibration(
+    ext_absorption: pd.DataFrame,
+    county_stats: pd.DataFrame,
+) -> pd.DataFrame:
+    """
+    For counties where ACS calibration clips to MU_CLIP_HI (unit/structure
+    mismatch in dense urban counties), replace f_c_external with the
+    Arruda-derived absorption fraction:
+
+        f_c_arruda = max(0, Arruda_RES_c - R_c) / max(N_c, 1)
+
+    Arruda et al. (2024) count residential *buildings* (same unit as Overture),
+    eliminating the ACS unit/structure mismatch in dense urban counties.
+    OSM undercoverage in rural/suburban areas makes Arruda less reliable there,
+    so ACS is retained for non-clipping counties.
+
+    Validation
+    ----------
+    Counties where Arruda_RES_c < R_c yield f_c_arruda < 0 (Arruda observes
+    fewer residential buildings than Overture already labels). These are flagged,
+    reported, and fall back to the endogenous r_frac_c.
+
+    Requires
+    --------
+    output/tables/arruda_ca_county_counts.parquet  (from script 07).
+    If absent, this step is skipped with a warning.
+
+    Parameters
+    ----------
+    ext_absorption : pd.DataFrame
+        Output of fetch_acs_housing_calibration() — columns:
+        county_FIPS, acs_units, f_c_external, calibration_source, diff_from_rfrac
+    county_stats : pd.DataFrame
+        county_FIPS, R_c, N_c, r_frac  (from compute_county_building_stats)
+
+    Returns
+    -------
+    pd.DataFrame
+        Same schema as ext_absorption. For acs_clipped counties:
+          calibration_source → 'arruda_direct' (override applied)
+                            → 'arruda_negative_fallback' (Arruda_RES < R_c)
+        All other rows unchanged.
+    """
+    if not IN_ARRUDA_COUNTY.exists():
+        print(f"  [skip] Arruda county counts not found: {IN_ARRUDA_COUNTY}")
+        print(f"  [skip] Run 07_acquire_arruda_comparison.py first to enable Arruda hybrid.")
+        print(f"  [skip] Keeping ACS calibration for all counties.")
+        return ext_absorption
+
+    arruda = pd.read_parquet(IN_ARRUDA_COUNTY)[["county_FIPS", "arruda_res_count"]].copy()
+    print(f"  Loaded Arruda county counts: {len(arruda)} counties")
+
+    # Merge ext_absorption with county building stats (R_c, N_c) and Arruda counts
+    merged = (
+        ext_absorption
+        .merge(county_stats[["county_FIPS", "R_c", "N_c", "r_frac"]], on="county_FIPS", how="left")
+        .merge(arruda, on="county_FIPS", how="left")
+    )
+
+    clipping_mask = merged["calibration_source"] == "acs_clipped"
+    n_clipping = clipping_mask.sum()
+    print(f"  Counties with ACS clipping (unit/structure mismatch): {n_clipping}")
+
+    if n_clipping == 0:
+        print(f"  [ok] No clipping counties — Arruda override not needed.")
+        return ext_absorption
+
+    result = ext_absorption.copy()
+    override_rows    = []
+    negative_rows    = []
+    missing_rows     = []
+
+    for idx, row in merged[clipping_mask].iterrows():
+        fips       = row["county_FIPS"]
+        R_c        = float(row["R_c"])
+        N_c        = float(row["N_c"])
+        r_frac     = float(row["r_frac"])
+        arruda_res = row["arruda_res_count"]
+
+        if pd.isna(arruda_res):
+            missing_rows.append(fips)
+            print(f"  [warn] {fips}: Arruda data missing; retaining acs_clipped calibration.")
+            continue
+
+        arruda_res = float(arruda_res)
+
+        # Validation check: negative f_c_arruda if Arruda_RES < R_c
+        if arruda_res < R_c:
+            negative_rows.append({
+                "county_FIPS":   fips,
+                "arruda_res":    int(arruda_res),
+                "R_c":           int(R_c),
+                "f_c_arruda_raw": round((arruda_res - R_c) / max(N_c, 1.0), 4),
+                "note": "Arruda_RES < Overture_labeled_residential; falls back to r_frac_c",
+            })
+            mask = result["county_FIPS"] == fips
+            result.loc[mask, "f_c_external"]       = r_frac
+            result.loc[mask, "calibration_source"] = "arruda_negative_fallback"
+            result.loc[mask, "diff_from_rfrac"]    = 0.0
+            continue
+
+        # Valid override: f_c_arruda ≥ 0
+        f_raw    = (arruda_res - R_c) / max(N_c, 1.0)
+        f_arruda = max(MU_CLIP_LO, min(MU_CLIP_HI, f_raw))
+        override_rows.append({
+            "county_FIPS":        fips,
+            "arruda_res":         int(arruda_res),
+            "R_c":                int(R_c),
+            "N_c":                int(N_c),
+            "f_c_arruda":         round(f_arruda, 4),
+            "f_c_acs_was_clipped": MU_CLIP_HI,
+        })
+        mask = result["county_FIPS"] == fips
+        result.loc[mask, "f_c_external"]       = round(f_arruda, 4)
+        result.loc[mask, "calibration_source"] = "arruda_direct"
+        result.loc[mask, "diff_from_rfrac"]    = round(abs(f_arruda - r_frac), 4)
+
+    # ── Validation report ────────────────────────────────────────────────────
+    print()
+    print("  ── Arruda hybrid calibration validation ──────────────────────────")
+
+    if negative_rows:
+        print(f"  [WARN] {len(negative_rows)} county/ies with NEGATIVE f_c_arruda "
+              f"(Arruda_RES < Overture labeled residential):")
+        print(f"  {'county_FIPS':<12} {'arruda_res':>12} {'R_c':>10} "
+              f"{'f_c_arruda_raw':>15}  note")
+        for r in negative_rows:
+            print(f"  {r['county_FIPS']:<12} {r['arruda_res']:>12,} {r['R_c']:>10,} "
+                  f"  {r['f_c_arruda_raw']:>14.4f}  {r['note']}")
+        print(f"  → These counties fall back to endogenous r_frac_c.")
+    else:
+        print(f"  [ok] No negative f_c_arruda among clipping counties "
+              f"(Arruda_RES ≥ R_c for all).")
+
+    if override_rows:
+        print(f"\n  [ok] Arruda override applied to {len(override_rows)} "
+              f"acs_clipped counties:")
+        print(f"  {'county_FIPS':<12} {'R_c':>10} {'N_c':>10} {'arruda_res':>12} "
+              f"{'f_c_arruda':>11}")
+        for r in override_rows:
+            print(f"  {r['county_FIPS']:<12} {r['R_c']:>10,} {r['N_c']:>10,} "
+                  f"{r['arruda_res']:>12,}  {r['f_c_arruda']:>10.4f}")
+
+    # Calibration source summary
+    src_counts = result["calibration_source"].value_counts()
+    print(f"\n  Calibration source summary (post Arruda hybrid):")
+    for src, cnt in src_counts.items():
+        print(f"    {src:<35}: {cnt:>3}")
+
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -934,8 +1113,13 @@ def main():
     # ── Step 0a: ACS external absorption calibration ──────────────────────
     print("\n--- Step 0a: ACS external absorption calibration ---")
     ext_absorption = fetch_acs_housing_calibration(county_stats)
+
+    # ── Step 0b: Arruda hybrid override for ACS-clipped counties ──────────
+    print("\n--- Step 0b: Arruda hybrid calibration override ---")
+    ext_absorption = apply_arruda_hybrid_calibration(ext_absorption, county_stats)
+
     ext_absorption.to_parquet(OUT_EXT_ABSORPTION, index=False)
-    print(f"[saved] {OUT_EXT_ABSORPTION.name}  ({len(ext_absorption)} counties)")
+    print(f"\n[saved] {OUT_EXT_ABSORPTION.name}  ({len(ext_absorption)} counties)")
 
     # ── Step 1: Calibrate Beta parameters per county ──────────────────────
     print("\n--- Step 1: Calibrate Beta(α_c, β_c) per county ---")

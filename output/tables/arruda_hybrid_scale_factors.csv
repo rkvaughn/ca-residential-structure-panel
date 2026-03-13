@@ -1,0 +1,59 @@
+county_FIPS,county_name,calibration_source,R_c,arruda_res_count,bootstrap_p50_2024,scale_factor,change_pct,arruda_negative_flag,rescaled
+06001,Alameda,acs_clipped,71127,421850,479428.8,0.879901,-12.01,False,True
+06003,Alpine,acs,943,1497,1549.9,1.0,0.0,False,False
+06005,Amador,acs,384,3977,17475.7,1.0,0.0,False,False
+06007,Butte,acs,2016,20305,87850.1,1.0,0.0,False,False
+06009,Calaveras,acs,184,41163,25602.8,1.0,0.0,False,False
+06011,Colusa,acs,1623,953,7426.3,1.0,0.0,True,False
+06013,Contra Costa,acs_clipped,33077,127107,361449.2,0.351659,-64.83,False,True
+06015,Del Norte,acs,275,1604,10634.4,1.0,0.0,False,False
+06017,El Dorado,acs,7799,19712,88700.7,1.0,0.0,False,False
+06019,Fresno,acs,8836,67806,316508.3,1.0,0.0,False,False
+06021,Glenn,acs,77,299,10416.6,1.0,0.0,False,False
+06023,Humboldt,acs,5495,21709,59381.8,1.0,0.0,False,False
+06025,Imperial,acs,946,11273,55552.5,1.0,0.0,False,False
+06027,Inyo,acs,1913,10664,8980.7,1.0,0.0,False,False
+06029,Kern,acs,77605,210023,291762.3,1.0,0.0,False,False
+06031,Kings,acs,2160,3263,44304.4,1.0,0.0,False,False
+06033,Lake,acs,4640,7050,32570.4,1.0,0.0,False,False
+06035,Lassen,acs,132,1674,11583.5,1.0,0.0,False,False
+06037,Los Angeles,acs_clipped,2678687,2825270,2745935.3,1.028892,2.89,False,True
+06039,Madera,acs,412,15630,46993.0,1.0,0.0,False,False
+06041,Marin,acs_clipped,7731,82532,103075.7,0.800693,-19.93,False,True
+06043,Mariposa,acs,350,7401,8714.7,1.0,0.0,False,False
+06045,Mendocino,acs,1191,4514,39743.4,1.0,0.0,False,False
+06047,Merced,acs,13177,37935,82855.6,1.0,0.0,False,False
+06049,Modoc,acs,126,969,4266.5,1.0,0.0,False,False
+06051,Mono,acs_clipped,505,9491,11252.5,0.843455,-15.65,False,True
+06053,Monterey,acs,81662,110656,134659.9,1.0,0.0,False,False
+06055,Napa,acs,3303,25839,52396.8,1.0,0.0,False,False
+06057,Nevada,acs,3417,21614,50427.2,1.0,0.0,False,False
+06059,Orange,acs_clipped,98456,763842,773399.0,0.987643,-1.24,False,True
+06061,Placer,acs,25361,61065,164292.9,1.0,0.0,False,False
+06063,Plumas,acs,355,2634,14557.8,1.0,0.0,False,False
+06065,Riverside,acs,135914,247436,825337.7,1.0,0.0,False,False
+06067,Sacramento,acs_clipped,45416,251484,491327.0,0.511846,-48.82,False,True
+06069,San Benito,acs,3851,22887,19218.7,1.0,0.0,False,False
+06071,San Bernardino,acs,59996,137317,694858.6,1.0,0.0,False,False
+06073,San Diego,acs_clipped,48074,263637,953824.3,0.2764,-72.36,False,True
+06075,San Francisco,acs_clipped,8697,147242,151158.1,0.974092,-2.59,False,True
+06077,San Joaquin,acs,33064,170205,241565.9,1.0,0.0,False,False
+06079,San Luis Obispo,acs,37656,150427,120635.6,1.0,0.0,False,False
+06081,San Mateo,acs_clipped,46545,211522,219523.0,0.963553,-3.64,False,True
+06083,Santa Barbara,acs_clipped,27448,81033,140568.4,0.576467,-42.35,False,True
+06085,Santa Clara,acs_clipped,116344,522957,542779.1,0.96348,-3.65,False,True
+06087,Santa Cruz,acs,25085,30300,101848.1,1.0,0.0,False,False
+06089,Shasta,acs,30419,48451,73121.4,1.0,0.0,False,False
+06091,Sierra,acs,473,1220,1882.5,1.0,0.0,False,False
+06093,Siskiyou,acs,1286,7060,21374.1,1.0,0.0,False,False
+06095,Solano,acs_clipped,10807,112493,149969.8,0.750104,-24.99,False,True
+06097,Sonoma,acs,113069,268015,194157.0,1.0,0.0,False,False
+06099,Stanislaus,acs,9520,47317,173470.8,1.0,0.0,False,False
+06101,Sutter,acs,233,8771,33122.2,1.0,0.0,False,False
+06103,Tehama,acs,907,1545,25898.5,1.0,0.0,False,False
+06105,Trinity,acs,40,693,7734.9,1.0,0.0,False,False
+06107,Tulare,acs,10919,48196,143459.7,1.0,0.0,False,False
+06109,Tuolumne,acs,2836,46916,29489.9,1.0,0.0,False,False
+06111,Ventura,acs_clipped,26060,88021,248207.7,0.354626,-64.54,False,True
+06113,Yolo,acs_clipped,13890,27466,71976.2,0.381599,-61.84,False,True
+06115,Yuba,acs,283,506,27840.2,1.0,0.0,False,False
