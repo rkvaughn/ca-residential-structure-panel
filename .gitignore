@@ -35,7 +35,7 @@ venv/
 dashboard/node_modules/
 dashboard/dist/
 dashboard/.cache/
-dashboard/.observablehq/cache/
+dashboard/src/.observablehq/
 
 # Claude Code project state
 .claude/

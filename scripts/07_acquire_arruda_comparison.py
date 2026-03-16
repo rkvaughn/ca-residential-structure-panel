@@ -672,11 +672,43 @@ def make_comparison_figure(comp: pd.DataFrame, rho: float | None) -> None:
     # ── Panel A: scatter ─────────────────────────────────────────────────────
     ax = axes[0]
     ax.set_facecolor("white")
-    ax.scatter(valid["bootstrap_p50"] / 1000, valid["arruda_res_count"] / 1000,
-               s=30, alpha=0.7, color="#2c7bb6", edgecolors="none")
+
+    # Compute ratio = Arruda / Bootstrap P50 to identify outliers for labeling
+    valid["ratio"] = valid["arruda_res_count"] / valid["bootstrap_p50"].replace(0, float("nan"))
+    q1, q3 = valid["ratio"].quantile(0.25), valid["ratio"].quantile(0.75)
+    iqr = q3 - q1
+    outlier_mask = (valid["ratio"] < q1 - 1.5 * iqr) | (valid["ratio"] > q3 + 1.5 * iqr)
+    # Also label the 5 largest counties (by bootstrap_p50) for navigation context
+    top5_idx = valid.nlargest(5, "bootstrap_p50").index
+    label_mask = outlier_mask | valid.index.isin(top5_idx)
+
+    # Plot all points
+    ax.scatter(valid.loc[~label_mask, "bootstrap_p50"] / 1000,
+               valid.loc[~label_mask, "arruda_res_count"] / 1000,
+               s=28, alpha=0.65, color="#2c7bb6", edgecolors="none")
+    ax.scatter(valid.loc[label_mask, "bootstrap_p50"] / 1000,
+               valid.loc[label_mask, "arruda_res_count"] / 1000,
+               s=38, alpha=0.85, color="#d7191c", edgecolors="none",
+               zorder=3)
+
+    # Label outliers + top-5 with county name (short)
+    for _, row in valid[label_mask].iterrows():
+        x = row["bootstrap_p50"] / 1000
+        y = row["arruda_res_count"] / 1000
+        name = row["county_name"].replace(" County", "").strip()
+        ax.annotate(
+            name,
+            xy=(x, y),
+            xytext=(4, 2),
+            textcoords="offset points",
+            fontsize=6.5,
+            color="#333333",
+            va="bottom",
+        )
+
     lim_max = max(valid["bootstrap_p50"].max(),
                   valid["arruda_res_count"].max()) / 1000 * 1.05
-    ax.plot([0, lim_max], [0, lim_max], "--", color="#d7191c",
+    ax.plot([0, lim_max], [0, lim_max], "--", color="#888888",
             linewidth=1.0, label="1:1 line")
     if rho is not None:
         ax.text(0.05, 0.92, f"Spearman \u03c1 = {rho:.3f}",
@@ -697,19 +729,22 @@ def make_comparison_figure(comp: pd.DataFrame, rho: float | None) -> None:
     ax.set_facecolor("white")
     labels = top20["county_name"].str.strip()
     y_pos  = np.arange(len(labels))
-    bar_h  = 0.25
+    # 4 bars per county: offsets centered at 0 with bar_h=0.2 spacing
+    bar_h  = 0.2
+    offsets = [-0.3, -0.1, 0.1, 0.3]
     color_map = [
         ("overture_labeled", "#4dac26", "Overture labeled"),
         ("arruda_res_count", "#2c7bb6", "Arruda RES"),
         ("bootstrap_p50",    "#d7191c", "Bootstrap P50"),
+        ("acs_units",        "#f4a442", "ACS B25001 (units)"),
     ]
-    for k, (col, color, label) in enumerate(color_map):
+    for offset, (col, color, label) in zip(offsets, color_map):
         vals = top20[col].fillna(0) / 1000
-        ax.barh(y_pos + (k - 1) * bar_h, vals,
+        ax.barh(y_pos + offset, vals,
                 height=bar_h * 0.9, color=color, alpha=0.8, label=label)
     ax.set_yticks(y_pos)
     ax.set_yticklabels(labels, fontsize=7)
-    ax.set_xlabel("Residential structures / buildings (thousands)", fontsize=10)
+    ax.set_xlabel("Residential structures / housing units (thousands)", fontsize=10)
     ax.set_title("B  Top 20 Counties by ACS Housing Units",
                  fontsize=11, loc="left", fontweight="bold")
     ax.legend(fontsize=8, frameon=False, loc="lower right")
