@@ -12,15 +12,13 @@ import {PANELS, fetchYearSlice, fetchTractSeries} from "./components/supabase-cl
 // Tract geometry — pre-computed GeoJSON, committed to repo (~4.7 MB)
 const tracts = await FileAttachment("data/ca-tracts.json").json();
 
-// Land area per tract computed from GeoJSON geometry (d3.geoArea → steradians → sq miles).
-// Uses simplified geometry (tolerance 0.001°), sufficient for density display.
-const EARTH_RADIUS_MI = 3958.8;
-const tractAreaSqMi = new Map(
-  tracts.features.map(f => {
-    const areaSqMi = d3.geoArea(f) * (EARTH_RADIUS_MI ** 2);
-    return [f.properties.geoid, areaSqMi];
-  })
-);
+// Net residential land area per tract (sq miles), excluding water bodies and public lands.
+// Derived from 2010 Census block-level ALAND10 (water-free) aggregated over blocks
+// with at least one housing unit (HU10 > 0). Blocks in national parks, national forests,
+// BLM land, state parks, and military reservations are excluded automatically.
+// See scripts/generate_tract_net_area.py for methodology.
+const netAreaRaw = await FileAttachment("data/tract_net_area.json").json();
+const tractAreaSqMi = new Map(Object.entries(netAreaRaw));
 
 // Hybrid panel — all years loaded statically to avoid runtime CORS issues (~15 MB, gzipped ~2 MB)
 const hybridAllYears = await FileAttachment("data/panel-hybrid.json").json();
@@ -114,7 +112,7 @@ const mapEl = Plot.plot({
         return [
           `Tract: ${g}`,
           density != null ? `Density: ${density.toLocaleString(undefined, {maximumFractionDigits: 1})} / sq mi` : "no data",
-          area != null ? `Area: ${area.toFixed(2)} sq mi` : "",
+          area != null ? `Net residential area: ${area.toFixed(2)} sq mi` : "",
         ].filter(Boolean).join("\n");
       },
     }),
@@ -153,7 +151,7 @@ if (selectedGeoid) {
   const yCol = PANELS[pKey].col;
   const hasUncertainty = PANELS[pKey].hasUncertainty;
   const area = tractAreaSqMi.get(selectedGeoid);
-  const areaLabel = area != null ? ` (${area.toFixed(2)} sq mi)` : "";
+  const areaLabel = area != null ? ` (${area.toFixed(2)} sq mi net residential)` : "";
 
   display(Plot.plot({
     title: `Tract ${selectedGeoid}${areaLabel} · ${PANELS[pKey].label}`,
