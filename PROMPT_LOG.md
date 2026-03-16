@@ -5,6 +5,43 @@ Most recent session at top.
 
 ---
 
+## 2026-03-16 — Session 5: Dashboard Polish + Net Area Denominator
+
+**Prompt:** remove water body area and public lands area from each tract when computing land area. consult with gemini for the best strategy to do this. present options to me for review.
+
+**Output:** Brainstormed with Gemini; presented 3 options: (A) Census block ALAND tabular aggregation, (B) TIGER ALAND + PAD-US geometric intersection, (C) NLCD land cover raster.
+
+**Prompt:** go with option a
+
+**Output:**
+- Created `scripts/generate_tract_net_area.py`: downloads DBF-only from TIGER 2010 CA block ZIP via HTTP range requests (~16 MB vs 419 MB full download); fetches HU10 per block from Census SF1 API across all 58 CA counties; filters to HU10 > 0 blocks (excludes 302,266 of 710,145 blocks — parks, forests, BLM, military, water); aggregates ALAND10 to 8,011 tracts
+- Generated `dashboard/src/data/tract_net_area.json` (180 KB committed static lookup)
+- Updated `dashboard/src/map.md` to load `tract_net_area.json` via `FileAttachment` instead of computing `d3.geoArea()`; tooltip shows "Net residential area"
+
+**Prompt:** launch a local dashboard i can review
+
+**Output:** Killed stale process on port 3456; started `npm run dev -- --port 3456`; confirmed all 3 FileAttachments loading (ca-tracts.json, tract_net_area.json, panel-hybrid.json).
+
+**Prompt:** the click to change the time series chart function doesnt seem to work.
+
+**Output:** Diagnosed root cause: Observable Plot does not expose D3's `__data__` binding on geo paths, so `path.__data__` and `d3.select(path).datum()` both return undefined. Fixed by parsing geoid from the SVG `<title>` child element that Plot renders for the `title` channel: `path.querySelector("title").textContent.match(/^Tract:\s*(\d{11})/)`. Also added nearest major metro area to tooltip via `COUNTY_METRO` lookup (Census 2020 CBSA delineations, all 58 CA counties).
+
+**Prompt:** commit and push
+
+**Output:** Committed and pushed all session changes.
+
+**Prompt:** make sure the dash is live at github pages
+
+**Output:** Enabled GitHub Pages via `gh api` (POST /repos/.../pages with build_type=workflow); triggered manual workflow run; confirmed successful deploy to https://rkvaughn.github.io/ca-residential-structure-panel/
+
+**Prompt:** update the project card on my website with the dashboard link
+
+**Output:** Added "Interactive Dashboard" link to `ryankvaughndotcom/_projects/ca_residential_structure_panel.md`; committed and pushed.
+
+**Known issue (not yet fixed):** Non-hybrid panels (ACS, Point, Arruda) only display a partial set of tracts on the choropleth. These panels use runtime Supabase fetch via `fetchYearSlice()`, which likely hits the default PostgREST row limit (1,000 rows) rather than returning all ~8,000 tracts. Needs investigation and fix (either pagination, raise the limit in Supabase, or generate static JSON files for all panels following the hybrid pattern).
+
+---
+
 ## 2026-03-15 — Session 4: Observable Framework Dashboard
 
 **Prompt (prior sub-session):** Build interactive web dashboard on GitHub Pages with Observable Framework + Supabase backend.
