@@ -5,6 +5,35 @@ Most recent session at top.
 
 ---
 
+## 2026-03-15 — Session 4: Observable Framework Dashboard
+
+**Prompt (prior sub-session):** Build interactive web dashboard on GitHub Pages with Observable Framework + Supabase backend.
+
+**Prompt:** Review the full panel project codebase [after Claude Code app session added the dashboard].
+
+**Prompt:** Refactor the code to remove unused code. Update for efficiency and clarity. Ensure all functions contain docstrings. Revise the project MD files to reflect the updated codebase.
+
+**Prompt:** Update the map page so that the user can click on a tract on the map to update the tract selected in the time series figure.
+
+**Output:**
+- Created `dashboard/` — Observable Framework app (4 pages: Overview, Map Explorer, Figures, Data & Downloads)
+- Created `dashboard/src/components/supabase-client.js` — originally used `@supabase/supabase-js`; replaced mid-session with direct `fetch` calls because `sb_publishable_` key format is not supported; added JSDoc to all exported functions
+- Created `dashboard/src/data/ca-tracts.json` — pre-computed 2010 CA tract GeoJSON (8,048 features, 4.74 MB) via `scripts/generate_ca_tracts.py`
+- Created `scripts/import_to_supabase.py` — one-time import; run successfully; 507,507 rows across 4 tables
+- Created `.github/workflows/deploy-dashboard.yml` — GitHub Actions deploy to GitHub Pages
+- Created `.env` (gitignored) with all Supabase credentials
+- **Fixed map choropleth:** Created `scripts/generate_panel_hybrid_json.py` + generated `dashboard/src/data/panel-hybrid.json` (14.8 MB). Map now uses `FileAttachment` instead of runtime Supabase fetch, bypassing CORS. Dev server confirmed serving both GeoJSON and panel JSON.
+- **Added click-to-select:** Map `<path>` click handler reads `.__data__.properties.geoid`, updates `geoidInput`, fires "input" event to trigger reactive time-series update. `geoidInput` defined before map cell so click handler can reference it; `view(geoidInput)` called after map to display in Tract Detail section.
+- Removed DEBUG `display()` lines from `map.md`; added `cursor: "pointer"` on geo marks
+- Added `"type": "module"` to `dashboard/package.json` (fixes Node.js warning)
+- Updated `CLAUDE.md` status table and directory structure
+- Updated `docs/dashboard_session_notes.md` with current architecture
+- Updated `PROMPT_LOG.md`
+
+**Not yet done:** Commit + push, enable GitHub Pages, test overview Supabase call end-to-end, figure caption standard.
+
+---
+
 ## 2026-03-12 — Session 3: Arruda Hybrid Calibration + Visualizations
 
 **Prompt:** "pickup where we left off please"

@@ -35,7 +35,7 @@ value pre-specified here and explicitly confirmed by the PI.
 
 ---
 
-## Project Status (as of 2026-03-12)
+## Project Status (as of 2026-03-15)
 
 | Component | Status |
 |---|---|
@@ -48,14 +48,14 @@ value pre-specified here and explicitly confirmed by the PI.
 | Script 05: bootstrap_structure_panel | **Validated** — prior successful run in prop13/ 2026-03-03 |
 | Script 06: build_acs_challenger | **Validated** — run in new repo 2026-03-06; Boot/ACS ratio ≈ 0.82–0.84 |
 | Script 07: acquire_arruda_comparison | **Complete** — run 2026-03-09; all 58 CA counties; Spearman ρ=0.916 |
-| Figures (7) | **Complete** — output/figures/ (incl. fig_arruda_comparison.png) |
-| Tables (4) | **Complete** — output/tables/ (incl. arruda_comparison.csv, arruda_ca_county_counts.parquet) |
+| Figures (10 PNG + 1 GIF) | **Complete** — output/figures/ |
+| Tables (6 CSV/parquet) | **Complete** — output/tables/ |
 | Arruda tract panel | **Complete** — data/clean/tract_structure_panel_arruda.parquet; 120,855 rows |
 | Paper (markdown) | **Complete** — Arruda validation section added 2026-03-09 |
 | Paper (PDF) | **Complete** — rebuilt 2026-03-09 |
 | GitHub Release v1.0 | **Complete** — 5 parquet assets uploaded |
 | GitHub Release v1.1 | **Complete** — tract_structure_panel_arruda.parquet uploaded 2026-03-09 |
-| Script 05: Arruda hybrid calibration (Step 0b) | **Complete** — added `apply_arruda_hybrid_calibration()` 2026-03-12; replaces ACS-clipped f_c=0.99 with Arruda f_c for 15 dense-urban counties; requires raw Overture data to activate |
+| Script 05: Arruda hybrid calibration (Step 0b) | **Complete** — `apply_arruda_hybrid_calibration()` replaces ACS-clipped f_c=0.99 with Arruda f_c for 15 dense-urban counties; activated with raw Overture data |
 | Script 08: arruda_hybrid_validation | **Complete** — run 2026-03-12; post-hoc rescaling, validation, spaghetti plots (3), animated GIF |
 | Arruda hybrid panel | **Complete** — data/clean/tract_structure_panel_arruda_hybrid.parquet (120,855 rows) |
 | Hybrid scale factors table | **Complete** — output/tables/arruda_hybrid_scale_factors.csv |
@@ -65,6 +65,7 @@ value pre-specified here and explicitly confirmed by the PI.
 | WUI buffer analysis plan | **Complete** — docs/wui_buffer_analysis_plan.md; Scripts 09–11 planned; blocked on Banerjee dataset verification |
 | utils/download_utils.py | Copied from ~/Projects/utilities/ 2026-03-06 |
 | utils/census_api.py | Copied from ~/Projects/utilities/ 2026-03-06 |
+| Dashboard (Observable Framework) | **In progress** — map choropleth fixed (static FileAttachment; click-to-select); not yet committed or deployed |
 
 ---
 
@@ -90,24 +91,45 @@ ca-residential-structure-panel/
 │   ├── 02_acquire_bps.py
 │   ├── 03_acquire_dins.py
 │   ├── 04_build_structure_panel.py
-│   ├── 05_bootstrap_structure_panel.py
+│   ├── 05_bootstrap_structure_panel.py    # includes apply_arruda_hybrid_calibration() (Step 0b)
 │   ├── 06_build_acs_challenger.py
 │   ├── 07_acquire_arruda_comparison.py
 │   ├── 08_arruda_hybrid_validation.py
+│   ├── generate_ca_tracts.py              # one-time: generates dashboard GeoJSON from TIGER
+│   ├── generate_panel_hybrid_json.py      # run locally to refresh dashboard/src/data/panel-hybrid.json
+│   ├── import_to_supabase.py              # one-time: imported 507,507 rows into Supabase
 │   └── utils/
 │       ├── download_utils.py
 │       └── census_api.py
+├── dashboard/                             # Observable Framework dashboard
+│   ├── src/
+│   │   ├── index.md                       # Overview page (statewide time-series via Supabase)
+│   │   ├── map.md                         # Map Explorer (choropleth + click-to-select time-series)
+│   │   ├── figures.md                     # Figures gallery
+│   │   ├── downloads.md                   # Data & Downloads
+│   │   ├── components/
+│   │   │   └── supabase-client.js         # Supabase REST helpers (JSDoc); hybrid uses FileAttachment
+│   │   └── data/
+│   │       ├── ca-tracts.json             # 2010 TIGER tract GeoJSON (4.74 MB, committed)
+│   │       └── panel-hybrid.json          # Hybrid panel all years (14.8 MB, committed)
+│   ├── package.json
+│   └── observablehq.config.js
+├── .github/
+│   └── workflows/
+│       └── deploy-dashboard.yml           # GitHub Actions → GitHub Pages
 ├── data/
 │   ├── raw/          # gitignored — re-acquire via scripts 01–03
 │   └── clean/        # gitignored — distributed via GitHub Releases v1.0
 ├── docs/
-│   └── wui_buffer_analysis_plan.md   # WUI buffer analysis plan (Scripts 09–11)
+│   ├── dashboard_session_notes.md         # Dashboard development context
+│   └── wui_buffer_analysis_plan.md        # WUI buffer analysis plan (Scripts 09–11)
 ├── output/
 │   ├── figures/      # 10 PNG figures + 1 GIF — committed
 │   └── tables/       # 6 CSV/parquet tables — committed
 ├── paper/
 │   ├── structure_count_writeup.md
 │   └── structure_count_writeup.pdf
+├── .env              # gitignored — Supabase credentials
 ├── .gitignore
 ├── CLAUDE.md
 └── README.md

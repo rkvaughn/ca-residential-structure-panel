@@ -4,6 +4,8 @@
 
 Built from Overture Maps building footprints, Census Building Permits Survey (BPS) data, and CAL FIRE Damage Inspection (DINS) demolition records, with bootstrap uncertainty quantification over Overture's 69% null-subtype rate.
 
+**[Interactive Dashboard →](https://rkvaughn.github.io/ca-residential-structure-panel/)** — Browse tract-level estimates by year, compare panels, view figures.
+
 ---
 
 ## Data
