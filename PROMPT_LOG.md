@@ -40,11 +40,19 @@ Most recent session at top.
 
 **Known issue (fixed next session):** Non-hybrid panels (ACS, Point, Arruda) only display a partial set of tracts on the choropleth. These panels use runtime Supabase fetch via `fetchYearSlice()`, which hits the default PostgREST max_rows cap (1,000 rows) rather than returning all ~8,000 tracts. Fixed by pagination in the following prompt.
 
+**Prompt:** on the map page there does not appear to be a change in the distribution of structures as the year changes on the slider. please troubleshoot
+
+**Output:** Two-part diagnosis: (1) Color domain auto-scaled per year to `[dMin, dMax]` — since the relative density ranking of tracts is stable year-over-year, every year looked identical even as absolute values shifted. Fixed by computing `globalDMin`/`globalDMax` once across all 120,855 rows of hybrid data and pinning the color domain globally. (2) Confirmed year type (`int` in JSON) matches `Inputs.range` return value — no type mismatch. Committed fix.
+
+**Prompt:** would it help to replace the supabase link with pre-created figures on the map page. / yes go ahead and generate the static files for the other panels
+
+**Output:** Created `scripts/generate_panel_static_json.py`; generated and committed `dashboard/src/data/panel-acs.json` (8.8 MB), `panel-point.json` (8.2 MB), `panel-arruda.json` (8.3 MB) from local parquets. Updated `map.md` to load all 4 panels via `FileAttachment` into an `ALL_YEARS_DATA` map, filtering client-side. Removed all `fetchYearSlice`/`fetchTractSeries` Supabase calls from the map page — eliminates CORS risk and pagination entirely. Import reduced to `PANELS` config only.
+
 **Prompt:** fix the non-hybrid panel row limit issue
 
 **Output:** Diagnosed root cause: Supabase PostgREST server-side `max_rows` silently caps responses at 1,000 rows regardless of the `limit=` query parameter (already set to 10,000 in the URL). With ~8,057 CA tracts, non-hybrid panels were rendering only ~12% of the map. Fixed by adding pagination to `fetchYearSlice()` in `supabase-client.js`: loops with `limit=1000&offset=N` until a page returns fewer than 1,000 rows, requiring up to 9 round-trips per year slice.
 
-**Prompt:** update the prompt log. commit and push
+**Prompt:** update the prompt log, commit and push. then prepare to move to a new project called "wildfire risk score evaluation"
 
 ---
 
