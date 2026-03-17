@@ -38,7 +38,13 @@ Most recent session at top.
 
 **Output:** Added "Interactive Dashboard" link to `ryankvaughndotcom/_projects/ca_residential_structure_panel.md`; committed and pushed.
 
-**Known issue (not yet fixed):** Non-hybrid panels (ACS, Point, Arruda) only display a partial set of tracts on the choropleth. These panels use runtime Supabase fetch via `fetchYearSlice()`, which likely hits the default PostgREST row limit (1,000 rows) rather than returning all ~8,000 tracts. Needs investigation and fix (either pagination, raise the limit in Supabase, or generate static JSON files for all panels following the hybrid pattern).
+**Known issue (fixed next session):** Non-hybrid panels (ACS, Point, Arruda) only display a partial set of tracts on the choropleth. These panels use runtime Supabase fetch via `fetchYearSlice()`, which hits the default PostgREST max_rows cap (1,000 rows) rather than returning all ~8,000 tracts. Fixed by pagination in the following prompt.
+
+**Prompt:** fix the non-hybrid panel row limit issue
+
+**Output:** Diagnosed root cause: Supabase PostgREST server-side `max_rows` silently caps responses at 1,000 rows regardless of the `limit=` query parameter (already set to 10,000 in the URL). With ~8,057 CA tracts, non-hybrid panels were rendering only ~12% of the map. Fixed by adding pagination to `fetchYearSlice()` in `supabase-client.js`: loops with `limit=1000&offset=N` until a page returns fewer than 1,000 rows, requiring up to 9 round-trips per year slice.
+
+**Prompt:** update the prompt log. commit and push
 
 ---
 
