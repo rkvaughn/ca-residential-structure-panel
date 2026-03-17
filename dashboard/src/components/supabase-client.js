@@ -82,6 +82,10 @@ async function restGet(path) {
  * Fetches all tracts for a given panel and year. Used for non-hybrid choropleth panels.
  * Note: The hybrid panel uses a static FileAttachment instead of this function.
  *
+ * Paginates in 1,000-row pages because Supabase PostgREST's server-side max_rows
+ * silently caps responses at 1,000 regardless of the limit query parameter.
+ * CA has ~8,057 tracts, so this requires up to 9 round-trips per year slice.
+ *
  * @param {string} panelKey - Key from PANELS (e.g., "acs", "point", "arruda")
  * @param {number} year - Year to fetch (2010–2024)
  * @returns {Promise<Array>} Array of {geoid, county_fips, <value_col>} objects.
@@ -91,7 +95,19 @@ export async function fetchYearSlice(panelKey, year) {
   const selectCols = hasUncertainty
     ? `geoid,county_fips,${col},${p5},${p95}`
     : `geoid,county_fips,${col}`;
-  return restGet(`${table}?select=${selectCols}&year=eq.${year}&limit=10000`);
+
+  const PAGE = 1000;
+  const rows = [];
+  let offset = 0;
+  while (true) {
+    const page = await restGet(
+      `${table}?select=${selectCols}&year=eq.${year}&limit=${PAGE}&offset=${offset}`
+    );
+    rows.push(...page);
+    if (page.length < PAGE) break;
+    offset += PAGE;
+  }
+  return rows;
 }
 
 /**
