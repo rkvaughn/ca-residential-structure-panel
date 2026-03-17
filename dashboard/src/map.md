@@ -23,6 +23,17 @@ const tractAreaSqMi = new Map(Object.entries(netAreaRaw));
 // Hybrid panel — all years loaded statically to avoid runtime CORS issues (~15 MB, gzipped ~2 MB)
 const hybridAllYears = await FileAttachment("data/panel-hybrid.json").json();
 
+// Fixed global density bounds computed once across all years of hybrid data.
+// Using a stable domain means the color scale doesn't auto-rescale per year,
+// so year-over-year changes (e.g. wildfire demolitions, new development) are
+// visible as actual color shifts rather than being masked by rescaling.
+const _allDensities = hybridAllYears
+  .filter(d => d.p50_residential_count != null)
+  .map(d => { const a = tractAreaSqMi.get(d.geoid) ?? 0; return a > 0 ? d.p50_residential_count / a : null; })
+  .filter(v => v != null && v > 0);
+const globalDMin = d3.min(_allDensities);
+const globalDMax = d3.max(_allDensities);
+
 // County FIPS (first 5 chars of tract GEOID) → nearest major metro area.
 // Source: Census Bureau 2020 CBSA county delineations for all 58 CA counties.
 const COUNTY_METRO = new Map([
@@ -121,7 +132,9 @@ const mapEl = Plot.plot({
   color: {
     type: "log",
     scheme: "YlOrRd",
-    domain: [Math.max(0.01, dMin ?? 0.01), dMax ?? 1000],
+    // Fixed domain across all years so color shifts are visible as the year changes.
+    // For non-hybrid panels, fall back to per-year bounds if global bounds are unavailable.
+    domain: [Math.max(0.01, globalDMin ?? dMin ?? 0.01), globalDMax ?? dMax ?? 1000],
     label: `${PANELS[pKey]?.label} — structures per sq mile (log scale)`,
     legend: true,
   },
