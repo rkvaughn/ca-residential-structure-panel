@@ -7,7 +7,7 @@ title: Map Explorer
 Browse tract-level residential structure **density** (structures per sq mile) across California. Use the controls to select a year and estimation method. **Click a tract on the map** to see its 2010–2024 time-series below.
 
 ```js
-import {PANELS, fetchYearSlice, fetchTractSeries} from "./components/supabase-client.js";
+import {PANELS} from "./components/supabase-client.js";
 
 // Tract geometry — pre-computed GeoJSON, committed to repo (~4.7 MB)
 const tracts = await FileAttachment("data/ca-tracts.json").json();
@@ -20,8 +20,19 @@ const tracts = await FileAttachment("data/ca-tracts.json").json();
 const netAreaRaw = await FileAttachment("data/tract_net_area.json").json();
 const tractAreaSqMi = new Map(Object.entries(netAreaRaw));
 
-// Hybrid panel — all years loaded statically to avoid runtime CORS issues (~15 MB, gzipped ~2 MB)
-const hybridAllYears = await FileAttachment("data/panel-hybrid.json").json();
+// All panels loaded statically to avoid CORS and row-limit issues with Supabase.
+// Regenerate with scripts/generate_panel_static_json.py when panel data changes.
+const hybridAllYears  = await FileAttachment("data/panel-hybrid.json").json();
+const acsAllYears     = await FileAttachment("data/panel-acs.json").json();
+const pointAllYears   = await FileAttachment("data/panel-point.json").json();
+const arrudaAllYears  = await FileAttachment("data/panel-arruda.json").json();
+
+const ALL_YEARS_DATA = {
+  hybrid: hybridAllYears,
+  acs:    acsAllYears,
+  point:  pointAllYears,
+  arruda: arrudaAllYears,
+};
 
 // Fixed global density bounds computed once across all years of hybrid data.
 // Using a stable domain means the color scale doesn't auto-rescale per year,
@@ -84,10 +95,8 @@ const pKey = view(Inputs.select(
 ## ${year} · ${PANELS[pKey]?.label} — Structures per sq mile
 
 ```js
-// For the hybrid panel, filter the pre-loaded static data; other panels fetch from Supabase.
-const yearData = pKey === "hybrid"
-  ? hybridAllYears.filter(d => d.year === year)
-  : await fetchYearSlice(pKey, year);
+// All panels use pre-loaded static data — filter client-side by year.
+const yearData = ALL_YEARS_DATA[pKey].filter(d => d.year === year);
 
 const valueCol = PANELS[pKey].col;
 
@@ -187,10 +196,9 @@ const selectedGeoid = view(geoidInput);
 
 ```js
 if (selectedGeoid) {
-  // For hybrid, filter the already-loaded static data; other panels fetch from Supabase.
-  const series = pKey === "hybrid"
-    ? hybridAllYears.filter(d => d.geoid === selectedGeoid).sort((a, b) => a.year - b.year)
-    : await fetchTractSeries(pKey, selectedGeoid);
+  const series = ALL_YEARS_DATA[pKey]
+    .filter(d => d.geoid === selectedGeoid)
+    .sort((a, b) => a.year - b.year);
 
   const yCol = PANELS[pKey].col;
   const hasUncertainty = PANELS[pKey].hasUncertainty;
